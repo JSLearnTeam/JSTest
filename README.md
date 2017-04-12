@@ -1,0 +1,2 @@
+# JSTest
+learnJS for everyone
