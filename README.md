@@ -1,2 +1,1 @@
-# JSTest
-learnJS for everyone
+#JSLearn
