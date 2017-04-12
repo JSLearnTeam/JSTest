@@ -1365,7 +1365,7 @@ function initJTB() {
     };
 
 }
-document.getElementById('myclipboard').onclick = initJTB();
+document.getElementById('myclipboard').onclick = initJTB;
 
 /*自动切换焦点 下面例子当输入框输入值等于maxLength时自动切换 */
 document.getElementById('autoChangeInput').onkeyup = function () {
@@ -1386,3 +1386,51 @@ document.getElementById('autoChangeInput').onkeyup = function () {
 // 新增输入类型 email url number 等
 // 输入模式  在文本字段新增 pattern 属性， 值为一个正则表达式，用于匹配文本框中的值 亲测兼容性并不好  检测浏览器是否支持  "pattern" in document.createElement('input');
  */
+// 检验有效性 checkValidity() 所有表单字段都有这个方法 下面举例
+/* validity对象输出错误类型举例
+    customError 如果设置了setCustomValidity()，则为true,否则为false
+    patternMismatch,rangeOverflow,rangeUnderflow,stepMismtach,tooLong,typeMismatch,valid 其他的都是false则返回true,valueMissing required没有值
+    禁用验证 novalidate 告诉表单不校验
+*/
+var h5input = document.getElementById('h5input')
+h5input.onblur = function () {
+    if (!h5input.checkValidity()) {
+        h5input.value = `输入值不符合pattern:${h5input.getAttribute('pattern')} 校验`;
+        h5input.select();
+        // 输出错误
+        console.log(h5input.validity);
+    }
+}
+
+/* 选择框脚本 select option
+    option 对象
+    index label selected text value
+    选择框的change事件出发，只需要选中了选项就会触发
+    获取选择项，遍历options selected
+    下面举例
+    
+ */
+function initSelectT(event, optionArray) {
+    if (!optionArray) {
+        optionArray = ['初始1', '初始2', '初始3', '初始4', '初始5', ]
+    }
+    var select = document.createElement('select');
+    select.multiple = true; // 是否允许多项选择
+    select.innerHTML = '<option>初始option</option>';
+    for (let i = 0, l = optionArray.length; i < l; i++) {
+        let newOption = document.createElement('option');
+        newOption.value = optionArray[i];
+        newOption.textContent = optionArray[i];
+        select.add(newOption, select.firstChild[0]);
+    } // 1 新增option   2 相关项relOption 之前
+    let index = 0; // 给定位置的选项
+    select.remove(index);
+    select.selectedIndex = 0; // 如果没有选中项 值为-1
+    select.size = 4; // 选择框中可见的行数
+    select.value == optionArray[0]; // true 没有选中时是空字符串，一个或多个的时候显示第一个 
+    console.log(select.options);
+    document.body.appendChild(select);
+}
+document.querySelector('#initSelect').onclick = initSelectT;
+/* 表单序列化 */
+/* 富文本编辑框 */
