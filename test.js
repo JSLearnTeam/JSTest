@@ -661,6 +661,8 @@ window.onload = function () {
         console.log('混杂模式！');
     }
     msg = document.getElementById('message');
+    // 本地用会有跨域问题
+    //frames['richedit'].document.designMode = 'on';
 
 }
 
@@ -1433,4 +1435,96 @@ function initSelectT(event, optionArray) {
 }
 document.querySelector('#initSelect').onclick = initSelectT;
 /* 表单序列化 */
-/* 富文本编辑框 */
+/* 富文本编辑框
+    这一技术的本质就是在页面中嵌入一个包含空HTML页面的iframe,通过设置designMode属性，这个空白的HTML页面可以被编辑，而编辑对象则是该页面的<body>元素的HTML代码，只有在页面完全加载之后才能设置这个属性。onload设置
+    具体属性不作赘述，感觉没什么卵用
+ */
+/* 使用Canvas绘图 IE9+
+    <canvas>由几组API构成，但并非所有的浏览器都支持所有这些API，除了具备基本绘图能力的2D上下文，<canvas>还建议了一个名为WebGL的3D上下文。但是支持不够好。
+ */
+var mycanvas = document.getElementById('mycanvas');
+document.getElementById('paintBtn').onclick = paint;
+// 检测canvas支持
+function paint() {
+    if (mycanvas.getContext) {
+        let context2d = mycanvas.getContext('2d');
+        //console.log(context2d);
+        /* 2D上下文
+        填充和描边 fillStyle,strokeStyle
+         */
+
+        // 绘制蓝色矩阵
+        context2d.fillStyle = "#0000ff";
+        context2d.fillRect(0, 0, 20, 20);
+        // 红色半透明矩阵
+        context2d.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        context2d.fillRect(10, 10, 30, 30);
+        // 交界处黑色描边修改lineWidth 和 lineCap 线条末端形状
+        context2d.strokeStyle = "black";
+        context2d.strokeRect(10, 10, 10, 10);
+        // 10秒后清除重叠矩形
+        setTimeout(function () {
+            mycanvas.getContext('2d').clearRect(10, 10, 10, 10);
+        }, 10000);
+        /* 绘制路径
+            arc(x,y,radius,startAngle,endAngle,counterclockwise是否按顺时针放下计算)
+            arcTo(x1,y1,x2,y2,radius) 从上一点开始绘制一条弧线
+            bezierCurveTo(c1x,c1y,c2x,c2y,x,y) 从上一点开始绘制一条取现，到(x,y)为止，并已(c1x,c1y)和(c2x,c2y)为控制点
+            lineTo(x,y) 从上一点开始绘制一条直线，到(x,y)为止
+            moveTo(x,y) 将绘图游标移动到(x,y),不画线
+            quadraticCurveTo(cx,cy,x,y) 从上一点开始绘制一条二次曲线，到(x,y)为止，并以(cx,cy)作为控制点
+            rect(x,y,width,height):从(x,y)开始绘制一个矩形
+            closePath() 绘制一条连接到路径起点的线条
+            fill()
+            stroke()
+            clip() 在路径上创建一个剪切区域
+         */
+        context2d.beginPath();
+        context2d.moveTo(30, 30);
+        context2d.lineTo(70, 0);
+        context2d.strokeStyle = 'green';
+        context2d.lineWidth = 5;
+        context2d.stroke();
+        context2d.closePath();
+
+        // 画一个三角形
+        context2d.rotate(Math.PI / 3);
+        context2d.beginPath();
+        context2d.moveTo(70, 0);
+        context2d.lineTo(40, 30);
+        context2d.lineTo(100, 30);
+        context2d.closePath();
+        context2d.fillStyle = 'blue';
+        context2d.fill();
+        context2d.rotate(-Math.PI / 3);
+        // 画一个圆
+        context2d.beginPath();
+        context2d.arc(50, 50, 50, 0, 2 * Math.PI, false);
+        context2d.closePath();
+        context2d.fillStyle = 'rgba(100,200,100,0.7)';
+        // 这个是变换，看下面注释
+        context2d.scale(1.5, 1);
+        context2d.fill();
+        console.log(context2d.isPointInPath(100, 100));
+        /* 绘制文本   fillText() strokeText()  (文本字符串，x,y)
+        属性 font  文本样式、大小、字体
+        textAlign  start、end、left、right、center
+        textBaseLine  top、hanging、middle、alphabetic、ideographic、bottom
+        */
+        context2d.font = 'bold 18px YaHei';
+        context2d.textAlign = 'start';
+        context2d.textBaseLine = 'top';
+        context2d.fillStyle = 'black';
+        context2d.fillText('Hello World', 50, 50);
+        context2d.lineWidth = 1;
+        context2d.strokeText('Hello Myself', 50, 100);
+        /* 变换
+        rotate(angle) scale(scaleX,scaleY)  tranlate(x,y) transform(m1_1,m1_2,m2_1,m2_2,dx,dy) 直接修改变换矩阵，方法是乘以如下矩阵
+        m1_1 m1_2 dx
+        m2_1 m2_2 dy
+        0    0    1
+        setTransform(m1_1,m1_2,m2_1,m2_2,dx,dy) 将矩阵变换为默认状态，然后再调用transform 
+         */
+
+    }
+}
