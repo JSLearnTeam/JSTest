@@ -1525,6 +1525,82 @@ function paint() {
         0    0    1
         setTransform(m1_1,m1_2,m2_1,m2_2,dx,dy) 将矩阵变换为默认状态，然后再调用transform 
          */
-
+        /* 绘制图像 drawImage(image,x,y,width 可选,height 可选)
+         */
+        context2d.shadowColor = 'grey';
+        context2d.shadowOffsetX = 5;
+        context2d.shadowOffsetY = 5;
+        context2d.shadowBlur = 10;
+        let img = document.images[0];
+        context2d.drawImage(img, 0, 0, 40, 40);
+        context2d.shadowOffsetX = 0;
+        context2d.shadowOffsetY = 0;
+        context2d.shadowBlur = 0;
+        /* 阴影
+        shadowColor shadowOffsetX shadowOffsetY shandowBlur 模糊的像素数，看上面的图片
+        兼容性并不是很好 IE ,FF4,Opera11兼容的最好
+         */
+        /* 渐变
+        createLinearGradient(x1,y1,x2,y2)     createRadialGradient(x1,y1,radius1,x2,y2,radius2)
+        addColorStop(0-1,color);
+         */
+        let linearGradient = context2d.createLinearGradient(30, 30, 60, 60);
+        linearGradient.addColorStop(0, 'black');
+        linearGradient.addColorStop(0.5, 'white');
+        linearGradient.addColorStop(1, 'black');
+        context2d.fillStyle = linearGradient;
+        context2d.fillRect(30, 30, 30, 30);
+        //let imageData = context2d.getImageData(0, 0, 30, 30);  注意跨域
+        // data[0-3]  red green blue alpha
+        /* 合成 globalAlpha  0-1的值，指定所有绘制的透明度 
+        globalComposition-Operation  表示后绘制的图形怎么样与先绘制的图形结合
+        source-over,source-in,source-out,source-atop,destination-over,destination-in,destination-out,destination-atop,lighter,copy,xor
+        */
+        /* WebGL 太复杂，不赘述 */
     }
 }
+
+/* HTML5 脚本编程 */
+/* 跨文档消息传递cross-document messaging XDM    ie8+
+postMessage(message,origin) 
+message 最好是用字符串形式发送，如果想传json之类的结构化数据，最好先进行JSON.stringify()
+第二个参数对保障安全通信非常重要，可以防止浏览器把消息发送到不安全的地方。如果origin不匹配文档来源域，则postMessage()什么都不做
+接收到XDM信息的时候，会触发window 对象的message事件。这个事件是以异步形式触发的，触发message处理程序的事件对象包含
+data origin source 发送消息的文档的window对象代理  3个部分组成
+*/
+// window.onmessage = function (event) {
+//     if (event.orgin == 'xxx') {
+//         // 处理 event.data
+//         event.source.postMessage('received', 'yyy');
+//     }
+// }
+
+/* 原生拖放事件
+    拖动某元素时，依次触发：dragstart drag dragend
+    被拖动到一个有效的放置目标上时：依次触发 dragenter, dragover, dragleave 或 drop
+    dataTransfer 对象 为了实现在拖放操作时实现数据交换 
+    getData() setData() 
+    dropEffect    none、move、copy、link
+    effectAllowed   uninitialized、none、move、copy、link、copyLink、copyMove、linkMove、all 
+    
+ */
+// 拖拽区块设置data
+document.getElementById('dragitem').ondragstart = function () {
+    event.dataTransfer.setData('text', '我来啦！');
+};
+// 自定义放置目标，将不允许放置的目标改为允许
+document.getElementById('dragtarget').ondragenter = function () {
+    event.preventDefault();
+};
+document.getElementById('dragtarget').ondragover = function () {
+    console.log(event.dataTransfer.getData('text'));
+    event.preventDefault();
+};
+/* 媒体元素
+属性：autoplay, buffered,bufferedBytes,bufferingRate,bufferingRate,bufferingThrottled,controls,currentLoop,currentSrc,currentTime,defaultPlaybackRate,
+duration,ended,loop,muted,networkState,paused,playbackRate,played,readyState,seekable,seeking,src,start,totalBytes,videoHeight,videoWidth,volume
+事件：abort,canplay,canplaythrough,canshowcurrentframe,dataunavailable,durationchange,emptied,empty,ended,error,load,loadeddata,loametadata,loadsstart,pause,play,playing,progress,ratechange,seeked,seeking,stalled,timeupdate,volumechange,waiting
+检测解码器支持情况： canPlayType() 返回值： probably ,maybe ,""
+ */
+
+/* */
