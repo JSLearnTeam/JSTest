@@ -1603,4 +1603,124 @@ duration,ended,loop,muted,networkState,paused,playbackRate,played,readyState,see
 检测解码器支持情况： canPlayType() 返回值： probably ,maybe ,""
  */
 
-/* */
+/* 历史状态管理
+现代Web应用中，用户的每次操作不一定会打开一个全新的页面，因此‘后退’和‘前进’按钮就也失去了作用，为了解决这个问题，首选使用‘hashchange’ 事件。HTML5通过更新history对象为管理历史状态提供了方便
+histroy.pushState({状态对象},新状态的标题，可选的相对URL)
+该方法会把新的状态信息加入历史状态栈，浏览器地址栏也会变成新的相对URL，但是浏览器并不会真的向服务器发送请求，即使状态改变之后查询
+location.href 也会返回与地址栏中相同的地址。
+replaceState({状态对象},新状态的标题) 
+ */
+
+/* 错误处理与调试
+try-catch 语句  错误类型：Error EvalError RangeError ReferenceError SyntaxError TypeError URIError
+// 调试技术 console对象 error 错误消息，info 消息性消息记录，log 一般消息，warn 警告消息
+// 抛出错误 throw new Error('one error')
+ */
+
+/* JavaScript与XML 不作赘述 */
+
+/* JSON 序列化对象  JSON.stringify() JSON.parse() */
+
+/* Ajax 与 Comet
+    XMLHttpRequest对象
+    XHR的用法 open(tpye,URL,isAsynchronous)
+    send(data) data:如果不需要通过请求主体发送数据，则必须传入null。
+    收到服务器响应之后，响应的数据会自动填充XHR对象的属性
+    responseText:作为响应主体被返回的文本
+    responseXML:如果响应的内容类型是‘text/xml’或'application/xml'，这个属性中将包含着相应数据的XML DOM文档
+    status:响应的HTTP状态
+    statusText:HTTP状态的说明
+    建议通过status来决定下一步的操作，不要依赖statusText,因为后者在跨浏览器使用时不太可靠。响应主体的内容都会保存到responseText属性中，二人对于非XML数据而言，responseXML属性的值将为null
+    通过检测XHR对象的readyState属性，0 尚未open().1 启动,2 发送， 3 接收 ，4 完成。每次readyState属性的值变化都会触发一次readystatechange事件
+    // 请求
+    GET请求 传入URL末尾的查询字符串必须经过正确的编码 encodeURIComponent()
+    POST请求 需要send() 传入某些数据，由于XHRR最初的设计是为了处理XML，因为可以在此传入XML DOM文档，传入的文档经过序列化之后将作为请求主题被提交到服务器。
+    默认情况下，服务器对POST请求和提交Web表单的请求并不会一视同仁。我们可以使用XHR来模仿表单提交
+*/
+// XHR模仿表单提交
+function fakeSubmit(url, data) {
+    let xhr = new XMLHttpRequest();
+    xhr.open('post', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.send(data);
+    return xhr;
+
+}
+// 辅助添加URL末尾的添加查询字符串参数
+function addURLParam(url, name, value) {
+    url += (url.indexOf('?') == -1 ? '?' : '&');
+    url += encodeURIComponent(name) + '=' + encodeURIComponent(value);
+    return url;
+}
+// 初始化XHR
+function initXHRObject() {
+    let xhr = new XMLHttpRequest();
+    xhr.open('post', 'http://xxx.com/test', false);
+    let data = {
+        name: '测试数据',
+        value: '123'
+    };
+    xhr.send(data);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            if (xhr.status >= 200 || xhr.status <= 300 || xhr.status == 304) {
+                console.log(xhr);
+            } else {
+                console.log('接口出错！');
+            }
+        }
+    };
+    /* HTTP头部信息
+    Accept,Accept-Charset,Accept-Encoding,Accept-Language,Connection,Cookie,Host,Referer,User-Agent
+    配置方法： setRequestHeader(name,value)设置自定义的请求头部信息
+    getResponseHeader(name);
+    */
+    xhr.setRequestHeader('MyHeader', 'MyValue');
+    xhr.timeout = 2000;
+    xhr.ontimeout = function () {
+        // 取消请求
+        xhr.abort();
+    }
+
+}
+
+/* XMLHttpRequest 2级
+// FormData 类型 支持类型FF4+,Safari 5+, Chrome,Android 3+
+ */
+function initFormData() {
+    let data = new FormData();
+    if (data) {
+        // 键值对
+        data.append('name', 'cwj');
+        // 表单元素
+        data.append(document.forms[0]);
+        //创建了FormData 实例后可以直接传给XHR 的send()方法
+    }
+}
+/* 超时设定 timeout属性
+如果超过配置的时间后，会调用 ontimeout 
+ */
+/* overrideMimeType()
+用于重写XHR响应的MIME类型，比如服务器返回的MIME类型是‘text/plain’，但数据中实际包含的是XML。responseXML属性中仍然是null,通过调用overrideMimeType()方法，可以保证把响应当作XML而非纯文本来处理
+ */
+/* 进度事件
+loadstart,progress,error,abort,load,loadend
+target 属性指向XHR对象实例
+progress事件，包含额外属性 lengthComputable 进度信息是否可用,position 已经接受的字节数,totalSize 根据Content-Length 响应头部确定的预期字节数
+ */
+/* 跨源资源共享 CORS Cross-Origin Resource Sharing
+    CORS背后的基本思想就是使用自定义的HTTP头部让浏览器与服务器进行沟通，从而决定请求或响应是应该成功还是失败。
+    比如一个简单的使用GET或者POST发送的请求，他没有自定义的头部，而主题内容是text/plain，在发送该请求时，需要给他附加一个额外的Origin头部，包含请求页面的源信息（协议\域名和端口）
+    Origin:http://www.baidu.com
+    如果服务器认为这个请求可以接受，就在Access-Control-Allow-Origin头部回发相同的源信息（公共资源。可以回发‘*’）
+    Access-Control-Allow-Origin:http://www.baidu.com
+    如果没有这个头部，或者有这个头部但源信息不匹配。浏览器就会驳回请求。
+    *请求和响应都不包含cookie
+    // IE对CORS的实现 XDR类型 XDomainRequest
+    cookie 不会随请求发送和响应，只能设置请求头部信息中的Content-Type，不能访问响应头部信息，只支持GET/POST
+    XDR对象Open只支持2个参数，只能是异步请求
+    // 其他浏览器对CORS的实现，使用标准的XHR对象并在open()方法中传入绝对URL即可
+    限制：不能使用setRequestHeader() 设置自定义头部
+            不能发送和接收 cookie
+            调用getAllResponseHeaders()总会返回空字符串
+ */
