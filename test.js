@@ -1723,4 +1723,61 @@ progress事件，包含额外属性 lengthComputable 进度信息是否可用,po
     限制：不能使用setRequestHeader() 设置自定义头部
             不能发送和接收 cookie
             调用getAllResponseHeaders()总会返回空字符串
+    带凭据的请求： withCredentials: true
+    如果服务器接受带凭据的请求，会用下面的HTTP头部响应：Access-Control-Allow-Credientials:true
+    其他跨域技术
+    图像Ping：最长用于跟踪用户点击页面或动态广告曝光次数
+             缺点：只能给GET，无法访问服务器响应文本
+    JSONP(JSON with padding):
+        JSONP由2部分组成：回调函数和数据，回调函数是响应到来时应该在页面中调用的函数。回调函数的名字一般是在请求中指定的。而数据就是传入回调函数中的JSON数据
+        http://freegeoip.net/json/?callback=handleResponse
+        JSONP是通过动态<script>元素来使用的，使用时可以为src属性指定一个跨域URL，因为JSONP是有效的JavaScript代码，所以在请求完成后，即在JSONP响应加载到页面中以后，就会立即执行
+        缺点：如果其他域不安全，此时除了完全放弃JSONP调用之外，没有办法追究；其次，要确定JSONP请求是否失败并不容易
  */
+// JSONP 举例
+function testJSONP() {
+    let script = document.createElement('script');
+    script.src = 'http://freegeoip.net/json/?callback=handleResponse';
+    document.body.appendChild(script);
+}
+// JSONP 回调
+function handleResponse(response) {
+    console.log(response);
+};
+
+/* Comet
+    服务器向页面推送数据的技术，适合处理体育比赛分数和股票报价等
+    实现方式：长轮询：页面发送一个服务器请求，然后服务器一直保持连接打开，直到有数据可发送。发送完数据之后，浏览器关闭连接，随即又发起一个到服务器的新请求（优势在于浏览器都支持）
+    流： 浏览器向服务器发送一个请求，然后服务器保持连接打开，然后周期性的向浏览器发送数据
+    在Firefox,Safari,Opera和Chrome中，通过侦听readystatechange事件以及检测 readyState是否为3，就可以利用XHR对象实现HTTP流
+    // 服务器发送事件 SSE 用于创建到服务器的单向连接，服务器通过这个连接可以发送任意数量的数据。服务器响应的MIME类型必须是text/event-stream
+ */
+function initSSE() {
+    var source = new EventSource('myevents.php');
+    /* 属性 readyState： 0 正连接到服务器 1 打开了连接 2 关闭了连接 
+    事件 open message error 
+    服务器发回的数据以字符串的形势保存在event.data中
+     */
+    source.onmessage = function () {
+        console.log(event.data);
+    }
+    source.close();
+    // 通过id：前缀可以给特定的事件指定一个关联的ID，设置了ID之后，EventSource 对象会跟中上一次触发的事件。如果连接断开，会向服务器发送一个包含名为 Last-Event-ID的特殊HTTP头部请求，以便服务器知道下一次该触发哪个事件
+};
+/* Web Sockets
+只能通过连接发送纯文本数据，对于复杂的数据结构，需要发送前进行序列化
+ */
+function initWebSockets() {
+    // ws 未加密协议，wss 加密协议， 必须传入绝对路径，不受同源策略影响
+    let socket = new WebSocket('ws://www.example.com/sever.php');
+    /* 属性：OPENING(0) OPEN(1) CLOSING(2) CLOSE(3)
+    没有readystatechange事件
+     */
+    let data = {
+        name: 'cwj'
+    };
+    socket.send(JSON.stringify(data));
+    socket.onmessage = function (event) {
+        console.log(event.data);
+    };
+}
