@@ -1,3 +1,11 @@
+function toggleMouseArea(moduleName) {
+    let area = document.getElementById(moduleName);
+    if (area.style.display === 'none') {
+        area.style.display = '';
+    } else {
+        area.style.display = 'none';
+    }
+}
 var base = {
     // 组建化继承
     extendClass: function (father, obj) {
@@ -1006,7 +1014,7 @@ myInput.onfocus = function () {
 /* 鼠标与滚轮事件 
     下面展示了DOM3事件定义的9个鼠标事件
 */
-var clickArea = document.getElementById('leftMenu');
+var clickArea = document.getElementById('clickArea');
 clickArea.onclick = function () {
     this.textContent = '我被点击了！';
 }
@@ -1040,7 +1048,7 @@ clickArea.onmouseover = function () {
 }
 // 客户区坐标位置,页面坐标位置，屏幕坐标位置
 document.body.onclick = function () {
-    clickArea.textContent = `鼠标当前位于 x:${event.clientX} y:${event.clientY}\n 鼠标当前位于页面 x:${event.pageX} y:${event.pageY} \n 鼠标当前位于屏幕 x:${event.screenX} y:${event.screenY}`;
+    clickArea.textContent = `鼠标当前位于 x:${event.clientX} y:${event.clientY}\n\r 鼠标当前位于页面 x:${event.pageX} y:${event.pageY} \n\r 鼠标当前位于屏幕 x:${event.screenX} y:${event.screenY}`;
     var array = [];
     if (event.shiftKey) {
         array.push('shift');
@@ -1055,7 +1063,6 @@ document.body.onclick = function () {
         array.push('meta');
     }
     clickArea.textContent += array.join(',');
-
 }
 // 页面中长点击移动
 var currentX = 0;
