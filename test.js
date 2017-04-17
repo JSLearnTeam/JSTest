@@ -1781,3 +1781,255 @@ function initWebSockets() {
         console.log(event.data);
     };
 }
+
+/* 高级技巧
+ */
+// 安全的类型检测 由于原生数组的构造函数名与全局作用域无关，因此使用toString()就能返回一直的值
+function isArray(value) {
+    // 检测原生函数或正则表达式，JSON类似 [object Function] [object RegExp]
+    return Object.prototype.toString.call(value) == '[object Array]';
+}
+/* 作用域安全的构造函数
+    如果没有用new ，属性会被映射到window 上
+    所以需要校验this对象确实是正确类型的实例
+*/
+function SaveClass(key, value) {
+    if (this instanceof SaveClass) {
+        this.key = key;
+        this.value = value;
+    } else {
+        return new SaveClass(key, value);
+    }
+}
+/* 惰性载入函数 主要处理浏览器差异多个if
+    一旦一次判断之后，修改该函数。避免重复判断if
+ */
+function LasyLoad() {
+    if (typeof XMLHttpRequest == 'undefined') {
+        LasyLoad = function () {
+            return new XMLHttpRequest();
+        };
+    } else if (typeof ActiveXObject != 'undefined') {
+        LasyLoad = function () {
+            if (typeof arguments.callee.activeXString != 'string') {
+                // ...
+            }
+        }
+    } else {
+        LasyLoad = function () {
+            throw new Error('No XHR object available.');
+        }
+    }
+}
+/* 函数绑定
+可以在特定的this环境中以指定参数调用另一个函数，该技巧常常和回调函数与事件处理程序一起使用，以便在将函数作为变量传递的同时保留代码执行环境。
+ */
+let handler = {
+    message: 'Event Handled',
+    handleClick: function (event) {
+        console.log(this.message);
+    }
+}
+// 需要创建闭包保存环境，这样会令代码难于理解和调试
+document.getElementById('myBtn').onclick = function (event) {
+    handler.handleClick(event);
+}
+
+// 所以实现了一个函数叫bind,bind() 创建了一个闭包，闭包使用apply()调用传入的函数，并给apply() 船体context对象和参数。注意这里使用的arguments对性爱那个是内部函数的，而非bind()的
+function bind(fn, context) {
+    return function () {
+        return fn.apply(context, arguments);
+    }
+}
+// 所以上述事件处理程序绑定可以改为
+document.getElementById('myBtn').onclick = bind(handler.handleClick, handler);
+
+/* 函数柯里化 */
+/* 防篡改对象*/
+let tamperProofObject = {
+    name: '防篡改对象！'
+}
+// 禁止给对象添加属性和方法
+Object.preventExtensions(tamperProofObject);
+// 密封 seal 不能删除属性和方法
+Object.seal(tamperProofObject);
+// 冻结 freeze  如果定义[[Set]] 函数，访问器属性仍然是可写的
+Object.freeze(tamperProofObject);
+
+/* 离线应用与客户端储存 */
+// 离线检测
+console.log(navigator.onLine ? '有网' : '断网');
+/* 应用缓存 appcache
+Appcache 就是从浏览器的缓存中分出来的一块缓存区。要想在这个缓存中保存数据，可以使用一个 描述文件(manifest file),列出要下载和缓存的资源 举例
+CACHE MANIFEST 
+#Comment
+file.js
+file.css
+要将描述文件与页面关联起来，可以在<html>中的manifest属性中指定这个文件的路径
+<html manifest ="offline.manifest"> MIME类型必须是 text/cache-manifest 文件拓展名现在推荐是 appcache
+虽然应用缓存的意图是确保离线时资源可用，但也相应的API让你知道它都在做什么。这个API的核心是applicationCache对象，这个对象有一个属性status常量，表示应用缓存的如下当前状态
+0 无缓存，1 限制，应用缓存未得到更新 2 检查中，正在下载描述文件并检查更新 3 下载中 4 更新完成 5 废弃
+事件: checking error noupdate  downloading progress updateready cached
+*/
+
+/* 数据存储
+cookie 当设定了一个cookie后，再给创建他的域名发送请求时，都uhi包含这个cookie。 这个限制确保了储存在cookie中的信息只能让批准的接受者访问，而无法被其他域访问
+cookie 的构成
+名称：不区分大小写
+值：必须经过URL编码
+域：cookie对于哪个域是有效的。所有向该域发送的请求中都会包含这个cookie信息。这个值可以包含子域 
+路径： 对于指定域中的那个路径，应该向服务器发送cookie
+失效时间： 表示cookie何时应该被删除的时间戳，默认是会话结束时即将所有cookie删除，不过也可以自己设置删除时间，GMT格式(Wdy,DD-Mon-YYYY HH:MM:SS GMT)
+安全标志：指定后，cookie只有在使用SSL连接的时候才发送到服务器
+  */
+var cookieUtil = {
+    get: function (name) {
+        let cookieName = encodeURIComponent(name) + '=',
+            cookieStart = document.cookie.indexOf(cookieName),
+            cookieValue = null;
+        if (cookieStart > -1) {
+            let cookieEnd = document.cookie.indexOf(';', cookieStart);
+            if (cookieEnd == -1) {
+                cookieEnd = document.cookie.length;
+            }
+            cookieValue = decodeURIComponent(document.cookie.substring(cookieStart + cookieName.length, cookieEnd));
+        }
+        return cookieValue;
+    },
+    set: function (name, value, expires, path, domain, secure) {
+        let cookieText = '';
+        if (name && value && name.length != 0 && name.length == value.length) {
+            for (let i = 0, len = name.length; i < len; i++) {
+                cookieText += (encodeURIComponent(name[i]) + '=' + decodeURIComponent(value[i]) + ';');
+            }
+            cookieText = cookieText.substring(0, cookieText.length - 1);
+            if (expires instanceof Date) {
+                cookieText += ';expires=' + expires.toGMTString();
+            }
+            if (path) {
+                cookieText += ';path=' + path;
+            }
+            if (domain) {
+                cookieText += ';domain=' + domain;
+            }
+            if (secure) {
+                cookieText += ';secure';
+            }
+            document.cookie = cookieText;
+            document.getElementById('message').textContent = 'cookie设置成功！';
+        } else {
+            throw new Error('Set Cookie Faild!Please check your arguments')
+        }
+    },
+    unset: function (name, path, domain, secure) {
+        this.set([''], [''], new Date(0), path, domain, secure);
+    }
+}
+/* Storage类型
+clear() getItem(name) key(index) removeItem(name) setItem(name, value) */
+/* IndexedDB
+Indexed DataBase API是在浏览器中保存结构化数据的一种数据库
+IndexedDB设计的操作完全是异步进行的。因此大多数操作会以请求方式进行，但这些操作会在后期执行。
+IndexedDB 最大的特色是使用对象保存数据，而不是用表来保存数据
+*/
+let database;
+
+function initDB() {
+    //浏览器都使用提供商前缀 所以获取indexedDB时需要下面那段代码
+    let indexedDB = window.indexedDB || window.msIndexedDB || window.mozIndexedDB || window.webkitIndexedDB;
+    // 打开数据库，如果不存在则会创建该数据库,默认是没有版本号的，最好一开始就为数据库指定一个版本号
+    let dbResult = indexedDB.open('test', 2);
+    dbResult.onerror = function (event) {
+        /* errorCode  UNKNOW_ERR(1) 意外错误
+                      NON_TRANSIENT_ERR
+                      NOT_FOUNT_ERR
+                      CONSTRAINT_ERR
+                      DATA_ERR
+                      NOT_ALLOWED_ERR
+                      TRANSACTION_INACTIVE_ERR
+                      ABORT_ERR
+                      READ_ONLY_ERR
+                      TIMEOUT_ERR
+                      QUOTA_ERR                   
+        */
+        throw new Error('something bad had happened while trying to open:' + event.target.errorCode);
+    }
+    dbResult.onsuccess = function (event) {
+        database = event.target.result;
+    }
+    dbResult.onupgradeneeded = function (event) {
+        database = event.target.result;
+        let users = [];
+        let responses = [];
+        for (let i = 0; i < 5; i++) {
+            let userTemp = {};
+            userTemp.name = `name${i}`;
+            userTemp.value = i;
+            users.push(userTemp);
+        }
+        let store = database.createObjectStore('users', {
+            keyPath: 'name'
+        });
+        for (let i = 0; i < users.length; i++) {
+            let res = store.add(users[i]);
+            res.onerror = function () {
+                throw new Error('something bad had happened while trying to open:' + event.target.errorCode);
+            };
+            res.onsuccess = function () {
+                console.log('成功添加user' + i);
+            };
+            responses.push(res);
+        }
+    }
+}
+// 事务以get举例 
+/* add() put() get() delete()  clear() */
+function getDataToDB(tableName, key) {
+    let IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
+    // 第二个参数是事务类型 0只读，1读写 2 改变
+    let transaction = database.transaction(tableName, 'readonly');
+    let req = transaction.objectStore(tableName).get(key);
+    req.onerror = function (event) {
+        throw new Error('something bad had happened!');
+    }
+    req.onsuccess = function (event) {
+        console.log(event.target.result);
+    }
+    transaction.onerror = function () {
+        throw new Error('something bad had happened!');
+    }
+    transaction.oncomplete = function () {
+        // 整个事务都完成了
+        console.log('transaction completed!')
+    }
+}
+// 使用游标查询
+function userCursor(tableName) {
+    let IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
+    // 第二个参数是事务类型 0只读，1读写 2 改变
+    let transaction = database.transaction(tableName, "readwrite");
+    let store = transaction.objectStore(tableName);
+    // 开启游标
+    let req = store.openCursor();
+    req.onsuccess = function (event) {
+        /* IDBCursor  direciton ：表示游标移动的方向，默认值是IDBCursor.NEXT(0) 表示下一项
+        IDBCursor.NEXT_NO_DUPLICATE(1)   PREV(2) PREV_NO_DUPLICATE
+        key 对象的键  value 实际的对象 primaryKey 游标使用的键 
+        可以调用update() delete() continue(key) advance(count)
+        */
+        let cursor = event.target.result;
+        let changeItem = cursor.value;
+        changeItem.value = 'new value';
+        let updateReq = cursor.update(changeItem);
+        updateReq.onsuccess = function (event) {
+            console.log('update success!');
+        }
+        updateReq.onerror = function (event) {
+            console.log('update faild!');
+        }
+        console.log(cursor);
+    }
+    req.onerror = function () {
+        throw new Error('something bad had happened!');
+    }
+}
