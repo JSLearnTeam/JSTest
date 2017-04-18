@@ -188,14 +188,25 @@ let arrayLike = {
   length: 3
 };
 let arr = Array.from(arrayLike);
-Array.from({length: 3}) // [undefined, undefined, undefined]
-Array.from(arrayLike,x => x+x);
+Array.from({
+  length: 3
+}) // [undefined, undefined, undefined]
+Array.from(arrayLike, x => x + x);
 // 等同于
-Array.from(arrayLike).map(x => x+x);
+Array.from(arrayLike).map(x => x + x);
 
-[1,5,9,10].find(function(value,index,array){
-  return value >5;
-})  // 9
-[1,5,9,10].findIndex(function(value,index,array){
-  return value >5;
-})  // 2
+[1, 5, 9, 10].find(function (value, index, array) {
+  return value > 5;
+}) // 9
+[1, 5, 9, 10].findIndex(function (value, index, array) {
+  return value > 5;
+}) // 2
+
+/* Module
+ */
+// Symbol 作为属性名，该属性不会出现在for...in、for...of循环中，也不会被Object.keys()、Object.getOwnPropertyNames()、JSON.stringify()返回。
+// Reflect.ownKeys() 可以返回所有类型的键名
+/* Symbol.for() 与 Symbol()  
+for() 会检测key是否已经存在，如果不存在才会新建一个值
+Symbol.keyFor方法返回一个已登记的 Symbol 类型值的key。
+*/
