@@ -299,3 +299,176 @@ function testMap(map, key) {
 }
 /* WeakMap
 键名只接受对象，设计目的在于，有时我们想在某个对象上面存放一些数据，但这会行程对于这个对象的引用，一旦我们不再需要这个对象，就必须手动删除这个引用 */
+
+/* Proxy 
+用于修改某些操作的默认行为，等沟通与在语言层面做出修改，所以属于一种“元编程”（meta programming)
+Proxy可以理解成，在目标对象之前假设一层‘拦截’，外界对对象的访问，都必须先通过这个拦截，因此提供了一种机制，可以对外接的访问进行过滤和改写。Proxy这个词的原意是代理，用在这里表示由他来代理某些操作，可以以为‘代理器’ 
+注意，要屎Proxy起作用，必须针对Proxy实例进行操作，而不是针对目标对象
+Proxy示例也可以作为其他对象的原型对象 obj = Object.create(proxy)
+Proxy支持的拦截操作 
+get (target,propKey,receiver)
+set (target,propKey,value,receiver)
+has: (target, propKey)   拦截propKey in proxy 的操作，返回一个布尔值
+deleteProperty(target, propKey)、ownKeys(target)、getOwnPropertyDescriptor(target, propKey)、defineProperty(target, propKey, propDesc)、preventExtensions(target)、getPrototypeOf(target)、isExtensible(target)、setPrototypeOf(target, proto)、apply(target, object, args)、construct(target, args)
+ES6 原生提供Proxy构造函数
+如果一个属性不可配置（configurable）和不可写（writable），则该属性不能被代理，通过 Proxy 对象访问该属性会报错。
+this对象:在Proxy代理的情况下，会指向Proxy */
+// taget 表示所要拦截的目标对象, handler 参数也是一个对象，用来定制拦截行为
+let target = {};
+let handlerE = {
+  get: function (target, propKey) {
+    return `Proxy ${propKey} the truly value is : ${target[propKey]} !`;
+  },
+  set: (target, propKey, value) => {
+    if (!Number.isNaN(value)) {
+      target[propKey] = value * 2;
+    } else {
+      target[propKey] = 'illegal value';
+    }
+  },
+  has: (target, propKey) => {
+    if (propKey.indexOf('pro') != -1) {
+      return false;
+    } else {
+      return propKey in target;
+    }
+  },
+  delete: (target, propKey) => {
+    // 如果没有pro，则采取默认行为删除
+    if (propKey.indexOf('pro') != -1) {
+      return false;
+    } else {
+      Reflect.deleteProperty(target, propKey);
+    }
+  },
+  ownKeys: (target) => {
+    // 拦截 getOwnPropertyNames(proxy),getOwnPropertySymbols(proxy)、Object.keys(proxy) 返回数组。
+    return null;
+  },
+};
+let handlerForConstruct = {
+  construct: (target, args) => {
+    target = args[0];
+    target.initName = '代理初始化';
+    return target;
+  }
+};
+let ConstructProxy = new Proxy(function () {}, handlerForConstruct);
+let cObjet = new ConstructProxy({
+  name: 'cwj',
+  age: '24'
+});
+let proxy = new Proxy(target, handlerE);
+// 技巧。将Proxy对象，设置到object.proxy属性。从而可以在object对象上调用
+// let objectP = {proxy:new Proxy(target,handler)};
+let objectP = Object.create(proxy);
+
+/* Reflect 
+设计目的： 1. 将Obejct对象的一些明显属于语言内部的方法（比如Object.defineProperty），放到Reflect对象上
+2. 修改某些Object方法的返回结果，让其变得更加合理。
+3. 让Object操作都变成函数行为， name in obj ==> Reflect.has(obj,name)
+4. Reflect对象的方法与Proxy对象的方法一一对应。这就让Proxy对象可以方便的调用对应的Reflect方法，完成默认行为
+5. 有了Reflect会让很多操作更易读
+Function.prototype.apply.call(Math.floor, undefined, [1.75]); ==》
+Reflect.apply(Math.floor, undefined, [1.75]) // 1
+静态方法：Reflect.apply(target,thisArg,args)
+Reflect.construct(target,args)
+Reflect.get(target,name,receiver)
+Reflect.set(target,name,value,receiver)
+Reflect.defineProperty(target,name,desc)
+Reflect.deleteProperty(target,name)
+Reflect.has(target,name)
+Reflect.ownKeys(target)
+Reflect.isExtensible(target)
+Reflect.preventExtensions(target)
+Reflect.getOwnPropertyDescriptor(target, name)
+Reflect.getPrototypeOf(target)
+Reflect.setPrototypeOf(target, prototype)
+ */
+// 实例 使用Proxy实现观察者模式
+const queuedObservers = new Set();
+
+const observe = fn => queuedObservers.add(fn);
+const observable = obj => new Proxy(obj, {
+  set
+});
+
+function set(target, key, value, receiver) {
+  const result = Reflect.set(target, key, value, receiver);
+  queuedObservers.forEach(observer => observer(target));
+  return result;
+}
+const person = observable({
+  name: '张三',
+  age: 20
+});
+
+function print(target) {
+  console.log(`${target.name}, ${target.age}`)
+}
+
+function isYoung(target) {
+  console.log(`this person is too  ${ target.age > 18 ? 'old' : 'young'  }`);
+}
+observe(print);
+observe(isYoung);
+
+/* Promise 是异步编程的一种解决方案，比传统的解决方案- 回调函数和事件 -更合理和更强大。
+所谓Promise，简单说就是一个容器，里面保存着某个未来才会结束的事件（通常是一个异步操作）从语法上说，Promise是一个对象，从他可以获取异步操作的消息。
+特点：1. 对象的状态不受外界影响。Promise对象代表一个异步操作，有三种状态：
+Pending(进行中) ， Resolved(已完成，又称Fulfilled)和 Rejected(已失败)
+2.一旦状态改变，就不会再变，任何适合都可以得到这个结果
+3.缺点：1.无法取消Promise 2.如果不设置回调函数，Promise内部抛出的错误不会反应到外部。3.当处于Pending状态时，无法得知进展到哪一个阶段
+Promise对象是一个构造函数，用来生成Promise实例
+Promise实例生成以后，可以用then 方法来分别指定Resolved状态和Reject状态的回调函数
+catch()方法可以捕获错误，是.then(null,rejection)的别名，用于指定发生错误时的回调函数
+all() 用于将多个Promise实例，包装成一个新的Promise实例，每个resolved，总的状态才会变成resolved，只要有一个rejected,总的状态就会变成rejected
+var p = Promise.all([p1,p2,p3] 可以不是数组，但必须具有Iterator接口)
+race() 和all() 类似，但是只要有一个状态改变，总的状态就会改变
+Promise 对象的错误具有“冒泡”性质，会一直向后传递，直到被捕获为止。也就是说，错误总是会被下一个catch语句捕获。
+ */
+let myPromise = new Promise(
+  function (resolve, reject) {
+    if ( /* 异步操作成功*/ true) {
+      let value = 'haha';
+      resolve(value);
+    } else {
+      reject(error);
+    }
+  }
+)
+myPromise.then(function (value) {
+  console.log(`Resolved ! value is :${value}`);
+}, function (error) {
+  console.log(`Rejected ! error is ${error}`);
+});
+// Promise对象实现的Ajax操作的例子
+var getJSON = function (url) {
+  var promise = new Promise(function (resolve, reject) {
+    var client = new XMLHttpRequest();
+    client.open("GET", url);
+    client.onreadystatechange = handler;
+    client.responseType = "json";
+    client.setRequestHeader("Accept", "application/json");
+    client.send();
+
+    function handler() {
+      if (this.readyState !== 4) {
+        return;
+      }
+      if (this.status === 200) {
+        resolve(this.response);
+      } else {
+        reject(new Error(this.statusText));
+      }
+    };
+  });
+
+  return promise;
+};
+
+// getJSON("/posts.json").then(function(json) {
+//   console.log('Contents: ' + json);
+// }, function(error) {
+//   console.error('出错了', error);
+// });
