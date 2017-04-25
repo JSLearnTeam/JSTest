@@ -425,6 +425,15 @@ catch()方法可以捕获错误，是.then(null,rejection)的别名，用于指�
 all() 用于将多个Promise实例，包装成一个新的Promise实例，每个resolved，总的状态才会变成resolved，只要有一个rejected,总的状态就会变成rejected
 var p = Promise.all([p1,p2,p3] 可以不是数组，但必须具有Iterator接口)
 race() 和all() 类似，但是只要有一个状态改变，总的状态就会改变
+resolve() 将现有对象转换为Promise对象。
+参数分为4种状况：1.参数是一个Promise实例
+2.参数是一个thenable对象，即具有then方法，resolve()会将这个对象转为Promise对象，并立即执行then方法
+3.参数不具有then方法，或者根本不是一个对象，则会返回一个新的Promise对象，状态为resolve。
+4.不带有任何参数，直接返回一个Resolved状态的对象
+reject() 返回一个新的Promise实例，状态为rejected
+// 两个有用的附加方法（不在ES6中） //
+done() 总是处于回调链的尾端，保证抛出任何可能出现的错误
+finally() 不管怎么样都会执行。与done（）的区别是该函数不管怎样都会必须执行
 Promise 对象的错误具有“冒泡”性质，会一直向后传递，直到被捕获为止。也就是说，错误总是会被下一个catch语句捕获。
  */
 let myPromise = new Promise(
@@ -472,3 +481,47 @@ var getJSON = function (url) {
 // }, function(error) {
 //   console.error('出错了', error);
 // });
+// done() 实现
+Promise.prototype.done = function (onFulfilled, onRejected) {
+  this.then(onFulfilled, onRejected)
+    .catch(function (reason) {
+      // 抛出一个全局错误
+      setTimeout(() => { throw reason }, 0);
+    });
+};
+// finally() 实现
+Promise.prototype.finally = function (callback) {
+  let P = this.constructor;
+  return this.then(
+    value  => P.resolve(callback()).then(() => value),
+    reason => P.resolve(callback()).then(() => { throw reason })
+  );
+};
+
+/* Iterator 和 for...of 循环
+Iterator 是一种接口，为各种不同的数据结构提供统一的访问机制
+作用：1. 为各种数据结构，提供一个统一的、简便的访问接口
+2. 使得数据结构的成员能够按某种次序排序
+3. ES6创造了一种新的遍历命令for...of 循环
+Iterator的遍历过程是这样的。
+
+（1）创建一个指针对象，指向当前数据结构的起始位置。也就是说，遍历器对象本质上，就是一个指针对象。
+
+（2）第一次调用指针对象的next方法，可以将指针指向数据结构的第一个成员。
+
+（3）第二次调用指针对象的next方法，指针就指向数据结构的第二个成员。
+
+（4）不断调用指针对象的next方法，直到它指向数据结构的结束位置。
+调用Iterator接口的场合
+1.解构复制 2.扩展运算符...  3.yield*后面跟一个可遍历结构 4.其他场合，任何接受数组作为参数的场合，其实都调用了遍历器接口 for..of Array.from() Map()... Promise.all()
+字符串是一个类似数组的对象，也原生具有Iterator接口
+for...of 可正确识别32位UTF-16字符
+for...of 的优点 1.对比es5 forEach() 他可以与break、continue 和 return 配合使用
+2. 对比for ...in 他不会手动添加其他键，而且循环顺序是指定的。
+ */
+
+/* Generator 函数的语法
+形式上，Generator 函数是一个普通函数，但是有两个特征。一是，function关键字与函数名之间有一个星号；二是，函数体内部使用yield语句，定义不同的内部状态（yield在英语里的意思就是“产出”）。
+调用Generator函数，返回一个遍历器对象，代表Generator函数的内部指针。以后，每次调用遍历器对象的next方法，就会返回一个有着value和done两个属性的对象。value属性表示当前的内部状态的值，是yield语句后面那个表达式的值；done属性是一个布尔值，表示是否遍历结束。
+Generator函数可以不用yield语句，这时就变成了一个单纯的暂缓执行函数。
+ */
