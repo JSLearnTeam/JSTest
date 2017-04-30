@@ -486,15 +486,19 @@ Promise.prototype.done = function (onFulfilled, onRejected) {
   this.then(onFulfilled, onRejected)
     .catch(function (reason) {
       // 抛出一个全局错误
-      setTimeout(() => { throw reason }, 0);
+      setTimeout(() => {
+        throw reason
+      }, 0);
     });
 };
 // finally() 实现
 Promise.prototype.finally = function (callback) {
   let P = this.constructor;
   return this.then(
-    value  => P.resolve(callback()).then(() => value),
-    reason => P.resolve(callback()).then(() => { throw reason })
+    value => P.resolve(callback()).then(() => value),
+    reason => P.resolve(callback()).then(() => {
+      throw reason
+    })
   );
 };
 
@@ -524,4 +528,180 @@ for...of 的优点 1.对比es5 forEach() 他可以与break、continue 和 return
 形式上，Generator 函数是一个普通函数，但是有两个特征。一是，function关键字与函数名之间有一个星号；二是，函数体内部使用yield语句，定义不同的内部状态（yield在英语里的意思就是“产出”）。
 调用Generator函数，返回一个遍历器对象，代表Generator函数的内部指针。以后，每次调用遍历器对象的next方法，就会返回一个有着value和done两个属性的对象。value属性表示当前的内部状态的值，是yield语句后面那个表达式的值；done属性是一个布尔值，表示是否遍历结束。
 Generator函数可以不用yield语句，这时就变成了一个单纯的暂缓执行函数。
+注意，由于next方法的参数表示上一个yield语句的返回值，所以第一次使用next方法时，不能带有参数。V8引擎直接忽略第一次使用next方法时的参数，只有从第二次使用next方法开始，参数才是有效的。从语义上讲，第一个next方法用来启动遍历器对象，所以不用带有参数。
+Generator函数返回的遍历器对象，都有一个throw方法，可以在函数体外抛出错误，然后在Generator函数体内捕获。   throw方法可以接受一个参数，该参数会被catch语句接收，建议抛出Error对象的实例
+throw方法被捕获以后，会附带执行下一条yield语句。也就是说，会附带执行一次next方法
+Generator函数返回的遍历器对象，还有一个return方法，可以返回给定的值，并且终结遍历Generator函数。
  */
+
+/* JavaScript语言的Thunk函数
+JavaScript 语言是传值调用，它的 Thunk 函数含义有所不同。在 JavaScript 语言中，Thunk 函数替换的不是表达式，而是多参数函数，将其替换成一个只接受回调函数作为参数的单参数函数。
+例子：// 正常版本的readFile（多参数版本）
+fs.readFile(fileName, callback);
+
+// Thunk版本的readFile（单参数版本）
+var Thunk = function (fileName) {
+  return function (callback) {
+    return fs.readFile(fileName, callback);
+  };
+};
+
+var readFileThunk = Thunk(fileName);
+readFileThunk(callback); */
+
+/* async 函数
+ES2017 标准引入了 async 函数，使得异步操作变得更加方便。
+async 函数是什么？一句话，它就是 Generator 函数的语法糖。
+对Generator函数的改进
+1.内置执行器，不需要co模块支持
+2.更好的语义
+3.更广的适用性 await命令后面可以是Promise对象和原始类型的值
+4.返回值是Promise对象，比Iterator对象好操作，可以用then指定下一步的操作
+进一步说，async函数完全可以看作多个异步操作，包装成的一个 Promise 对象，而await命令就是内部then命令的语法糖。
+只有async函数内部的异步操作执行完，才会执行then方法指定的回调函数。
+正常情况下，await命令后面是一个 Promise 对象。如果不是，会被转成一个立即resolve的 Promise 对象。
+只要一个await语句后面的 Promise 变为reject，那么整个async函数都会中断执行。
+我们希望即使前一个异步操作失败，也不要中断后面的异步操作。这时可以将第一个await放在try...catch结构里面，这样不管这个异步操作是否成功，第二个await都会执行。
+使用注意点：
+1.await命令后面的Promise对象，运行结果可能是rejected，所以最好把await命令放在try...catch代码块中。
+2.多个await命令后面的异步操作，如果不存在继发关系，最好让它们同时触发。
+3.await命令只能用在async函数之中，如果用在普通函数，就会报错。如果确实希望多个请求并发执行，可以使用Promise.all方法。
+
+ */
+
+/* class 
+也是直接对类使用new命令，跟构造函数的用法完全一致。
+构造函数的prototype属性，在ES6的“类”上面继续存在。事实上，类的所有方法都定义在类的prototype属性上面。
+类的内部所有定义的方法，都是不可枚举的（non-enumerable）。
+constructor方法
+是类的默认方法，通过new命令生成对象实例时，自动调用该方法。一个类必须有constructor方法，如果没有显式定义，一个空的constructor方法会被默认添加。默认返回实例对象（即this），完全可以指定返回另一个对象
+
+class 与传统构造函数相比，不存在变量提升
+
+私有方法：ES6不提供，但有变通方法可模拟实现
+1.在命名上加以区别，_functionName
+2.将私有方法移出模块  
+class Widget {
+  foo (baz) {
+    bar.call(this, baz);
+  }
+
+  // ...
+}
+
+function bar(baz) {
+  return this.snaf = baz;
+}
+3. 利用Symbol值的唯一性，将私有方法的名字命名为一个Symbol值
+const bar = Symbol('bar');
+const snaf = Symbol('snaf');
+
+export default class myClass{
+
+  // 公有方法
+  foo(baz) {
+    this[bar](baz);
+  }
+
+  // 私有方法
+  [bar](baz) {
+    return this[snaf] = baz;
+  }
+
+  // ...
+};
+
+this 的指向 
+解决this指向问题的方法：
+1.在构造方法中绑定this
+2.使用箭头函数
+3.使用Proxy
+
+name 属性总是返回紧跟在class 关键字后面的类名
+new.target属性，用于返回构造函数通过什么调用的，用途看下面
+ */
+const MyClass = class Me {
+  constructor(name) {
+    if (new.target === Me || new.target === undefined) {
+      throw new Error(`本类必须通过子类构建实例化且必须使用new关键字！`)
+    }
+    this.name = name;
+    this.getName = this.getName.bind(this);
+  }
+  getName() {
+    return this.name;
+  }
+}
+/* class的继承
+extends
+super关键字表示父类的构造函数，用来新建父类的this对象，子类必须在constructor方法中调用super方法。因为子类没有自己的this对象，必须继承父类的this对象，然后对其加工
+extends的继承目标 
+1.子类继承Object类，子类就是构造函数Object的复制
+2.不存在继承，则直接继承Function.prototype
+3.继承null，Function.prototype
+Object.getPrototypeOf() 从子类上获取父类
+ */
+//@addChildVariable
+class MyChildClass extends MyClass {
+  constructor(name, age) {
+    super(name);
+    this.age = age;
+  }
+  // message: '这样定义静态属性无效！'  
+  get myName() {
+    return this.name;
+  }
+  set myName(value) {
+    this.name = value;
+    console.log(value);
+  }
+  static greeting() {
+    console.log(`this is MyChildClass's static function !`);
+  }
+  getInfo() {
+    return `name is ${super.getName()} age is ${this.age}`;
+  }
+  // ES7提案的属性定义方法 Babel转码器支持
+  // message = 'ES7属性等式定义！';
+  // static message = 'ES7静态属性定义！';
+  // 提案： 私有属性 在属性名之前用#表示
+}
+/* 原生构造函数的继承
+因为ES6是先新建父类的实例对象this，然后再用子类的构造函数修饰this，使得父类的所有行为都可以继承。
+而ES5是先生成子类实例，再讲父类的属性添加到子类上 */
+/* Class的取值函数和存值函数 getter ,setter */
+/* Class的静态方法 static
+静态方法通过类调用，可被子类继承，也可被super对象调用 */
+/* Class的静态属性和实例属性 */
+MyChildClass.message = '静态属性！';
+
+/* Mixin模式的实现
+多个类的接口“混入”（mix in）另一个类 */
+function mix(...mixins) {
+  class Mix {}
+
+  for (let mixin of mixins) {
+    copyProperties(Mix, mixin);
+    copyProperties(Mix.prototype, mixin.prototype);
+  }
+
+  return Mix;
+}
+
+function copyProperties(target, source) {
+  for (let key of Reflect.ownKeys(source)) {
+    if (key !== "constructor" &&
+      key !== "prototype" &&
+      key !== "name"
+    ) {
+      let desc = Object.getOwnPropertyDescriptor(source, key);
+      Object.defineProperty(target, key, desc);
+    }
+  }
+}
+
+/* Decorator 修饰器 
+是一个函数，用来修改类的行为ES7的提案 */
+function addChildVariable(target) {
+  target.decorator = addChildVariable;
+}
