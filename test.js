@@ -46,7 +46,7 @@ var testItems = {
     str: "admin",
     reg: new RegExp("\d", "i")
 }
-var objLearn = function () {
+var ObjLearn = function () {
     this.forinTest = function (items) {
         if (items.constructor == Object) {
             for (item in items) {
@@ -167,9 +167,9 @@ timeoutLearn.setIntervalTest = function (time) {
         }, 1000
     );
 }
-base.extendClass(objLearn, timeoutLearn);
-var t = new objLearn();
-
+base.extendClass(ObjLearn, timeoutLearn);
+var t = new ObjLearn();
+//  修复数组实验
 function repairArray(array, num) {
     let temp = array[0] - num;
     let startList = [];
@@ -345,7 +345,7 @@ function CwjClass() {
         console.log(Math);
     }
 }
-var t = new CwjClass();
+var cc = new CwjClass();
 // chapter 6 面向对象的程序设计
 // 组合使用构造函数模式和原型模式
 function OOtest(name, age) {
