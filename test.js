@@ -103,7 +103,7 @@ var arrayLearn = {
             case 3:
                 result = array.reverse();
                 break;
-                // item - next >0 asc <0 esc
+            // item - next >0 asc <0 esc
             case 4:
                 result = array.sort(function (item, next) {
                     return item - next;
@@ -236,7 +236,7 @@ var newClass = new ClassTest(testItems);
 var objtest = {
     withTest: function () {
         var qs = '?debug=true';
-        with(location) {
+        with (location) {
             var href = href + qs;
         }
         return href;
@@ -439,7 +439,7 @@ var instance4 = new SubType2('fd', 23);
 
 // 原型式继承
 function object(o) {
-    function F() {};
+    function F() { };
     F.prototype = o;
     return new F();
 }
@@ -978,14 +978,15 @@ btn.removeEventListener('click', fun, false); // 生效
 // 事件冒泡测试，可取消冒泡
 var father = document.getElementsByClassName('content')[0];
 father.onclick = function () {
-    console.log('儿子被点击了！')
+    msg.textContent = '儿子被点击了！';
 };
 father.children[0].onclick = function () {
-    console.log('我被点击了！而且不告诉爸爸！')
+
+    msg.textContent = '我被点击了！而且不告诉爸爸！';
     event.stopPropagation();
 };
 father.children[1].onclick = function () {
-    console.log('我被点击了！告诉爸爸！');
+    msg.textContent = '我被点击了！告诉爸爸！';
 };
 /* IE中的事件对象 
     在使用DOM0级方法添加事件处理程序时，event对象作为window对象的一个属性存在。 var event = window.event;
@@ -1073,7 +1074,7 @@ document.body.onmousedown = function () {
     console.log(event.button);
 }
 document.body.onmouseup = function () {
-    document.getElementById('mouseXY').textContent = `鼠标移动了 x:${event.pageX - currentX} y:${event.pageY -currentY}`;
+    document.getElementById('mouseXY').textContent = `鼠标移动了 x:${event.pageX - currentX} y:${event.pageY - currentY}`;
     currentX = event.pageX;
     currentY = event.pageY;
 }
@@ -1145,17 +1146,17 @@ document.addEventListener('DOMContentLoaded', function () {
 document.onreadystatechange = function () {
     console.log(document.readyState);
 }
-// pageshow 和 pagehide 例子为pageshow， pagehide 正好相反
-(function () {
-    // showCount 会在刷新是重置，但是如果是前进\后退时则会缓存
-    var showCount = 0;
-    window.onpageshow = function () {
-        //虽然绑定在window，但实际目标是document
-        showCount++;
-        msg.textContent = '页面完全加载完毕！' + showCount;
+    // pageshow 和 pagehide 例子为pageshow， pagehide 正好相反
+    (function () {
+        // showCount 会在刷新是重置，但是如果是前进\后退时则会缓存
+        var showCount = 0;
+        window.onpageshow = function () {
+            //虽然绑定在window，但实际目标是document
+            showCount++;
+            msg.textContent = '页面完全加载完毕！' + showCount;
 
-    }
-}());
+        }
+    }());
 // hashchange 事件 当url参数列表变化时触发
 window.onhashchange = function () {
     msg.textContent = `old URL: ${event.oldURL}  new URL: ${event.newURL}`
@@ -1421,7 +1422,7 @@ h5input.onblur = function () {
  */
 function initSelectT(event, optionArray) {
     if (!optionArray) {
-        optionArray = ['初始1', '初始2', '初始3', '初始4', '初始5', ]
+        optionArray = ['初始1', '初始2', '初始3', '初始4', '初始5',]
     }
     var select = document.createElement('select');
     select.multiple = true; // 是否允许多项选择
